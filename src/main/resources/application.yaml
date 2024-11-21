@@ -6,3 +6,5 @@ upwork:
   credentials:
     email: email
     password: pass
+    transaction:
+      date-range: "Oct 01, 2024 - Oct 31, 2024"

@@ -1,5 +1,6 @@
 package com.carls.service;
 
+import com.carls.config.UpworkConfiguration;
 import com.carls.config.UpworkCredentials;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
@@ -30,7 +31,7 @@ import java.util.Map;
 public class UpworkAutomationService {
 
     @Autowired
-    private UpworkCredentials credentials;
+    private UpworkConfiguration credentials;
 
     private WebDriver driver;
 
@@ -72,7 +73,7 @@ public class UpworkAutomationService {
             WebElement emailField = wait.until(ExpectedConditions.presenceOfElementLocated(By.id("login_username")));
 
             // Fill in email
-            emailField.sendKeys(credentials.getEmail());
+            emailField.sendKeys(credentials.getCredentials().getEmail());
             emailField.submit();
 
             // Wait for Cloudflare human check to complete (can be refined or solved with CAPTCHA-solving API if needed)
@@ -82,7 +83,7 @@ public class UpworkAutomationService {
             WebElement passwordField = wait.until(ExpectedConditions.presenceOfElementLocated(By.id("login_password")));
 
             // Fill in password
-            passwordField.sendKeys(credentials.getPassword());
+            passwordField.sendKeys(credentials.getCredentials().getPassword());
             passwordField.submit();
 
         } catch (Exception e) {
@@ -95,10 +96,24 @@ public class UpworkAutomationService {
         try {
             WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
 
-            // Navigate to transaction history page
+            // Navigate to the transaction history page
             driver.get("https://www.upwork.com/nx/payments/reports/transaction-history/");
 
-            // Wait for the download invoices button to appear
+            // Wait for the calendar input field
+            WebElement dateInput = wait.until(ExpectedConditions.presenceOfElementLocated(
+                    By.cssSelector("input[aria-labelledby='trx-statement-period-filter']")
+            ));
+
+            // Set the date range using JavaScript to bypass readonly attribute
+            String dateRange = credentials.getTransaction().getDateRange();
+            ((JavascriptExecutor) driver).executeScript("arguments[0].value = arguments[1];", dateInput, dateRange);
+
+            // Trigger the input's change event to ensure the page updates
+            ((JavascriptExecutor) driver).executeScript(
+                    "arguments[0].dispatchEvent(new Event('change', { bubbles: true }));", dateInput
+            );
+
+            // Wait for the "Download invoices" button to appear
             WebElement downloadButton = wait.until(ExpectedConditions.elementToBeClickable(
                     By.xpath("//button[@data-qa='download-invoices']")
             ));
@@ -106,13 +121,14 @@ public class UpworkAutomationService {
             // Click the download button
             downloadButton.click();
 
-            // Wait for download to complete (adjust this based on download speeds)
+            // Wait for the download to complete (adjust as needed)
             Thread.sleep(10000);
 
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
+
 
     // Quit WebDriver
     public void quitDriver() {
