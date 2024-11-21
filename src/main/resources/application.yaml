@@ -1,0 +1,8 @@
+spring:
+  application:
+    name: invoice-downloader-upwork
+
+upwork:
+  credentials:
+    email: ahmad.alsanie@hotmail.com
+    password: UpWork101**
